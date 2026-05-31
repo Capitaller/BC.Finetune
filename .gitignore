@@ -1,0 +1,23 @@
+.DS_Store
+
+# Local Microsoft Dynamics 365 Business Central source export.
+Base Application.Source/
+
+# Generated corpus files derived from local source.
+data/bc_al_text/
+
+# Training and notebook outputs.
+checkpoint-*/
+outputs/
+runs/
+wandb/
+*.safetensors
+*.gguf
+gemma-4-e2b-bc-cpt/
+gemma-4-e2b-bc-cpt-merged/
+gemma-4-e2b-bc-cpt-gguf/
+
+# Python caches.
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
