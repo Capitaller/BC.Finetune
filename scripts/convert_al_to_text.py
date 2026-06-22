@@ -11,6 +11,9 @@ from pathlib import Path
 DEFAULT_INPUT = Path("Base Application.Source")
 DEFAULT_OUTPUT = Path("data/bc_al_text")
 TRAINING_TEXT_FILENAME = "business_central_al_training_text.txt"
+TRAINING_FILES_JSONL_FILENAME = "business_central_al_files.jsonl"
+FILE_START_TOKEN = "<|bc_al_file|>"
+FILE_END_TOKEN = "<|end_bc_al_file|>"
 MICROSOFT_LICENSE_HEADER = """// ------------------------------------------------------------------------------------------------
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
@@ -74,11 +77,16 @@ def strip_repeated_header(text: str) -> tuple[str, int]:
     return "".join(cleaned_lines).lstrip("\n"), occurrences
 
 
+def format_training_file(relative_path: Path, content: str) -> str:
+    return f"{FILE_START_TOKEN}{relative_path.as_posix()}\n{content}\n{FILE_END_TOKEN}"
+
+
 def convert(source_dir: Path, output_dir: Path, dry_run: bool = False) -> dict[str, object]:
     source_dir = source_dir.resolve()
     output_dir = output_dir.resolve()
     files_dir = output_dir / "files"
     training_text_path = output_dir / TRAINING_TEXT_FILENAME
+    training_files_jsonl_path = output_dir / TRAINING_FILES_JSONL_FILENAME
     manifest_path = output_dir / "manifest.json"
 
     if not source_dir.exists():
@@ -92,6 +100,7 @@ def convert(source_dir: Path, output_dir: Path, dry_run: bool = False) -> dict[s
         "output_dir": str(output_dir),
         "files_dir": str(files_dir),
         "training_text_path": str(training_text_path),
+        "training_files_jsonl_path": str(training_files_jsonl_path),
         "manifest_path": str(manifest_path),
         "al_file_count": len(al_files),
         "dry_run": dry_run,
@@ -104,7 +113,10 @@ def convert(source_dir: Path, output_dir: Path, dry_run: bool = False) -> dict[s
     manifest_files = []
     stripped_header_count = 0
 
-    with training_text_path.open("w", encoding="utf-8", newline="\n") as training_text:
+    with (
+        training_text_path.open("w", encoding="utf-8", newline="\n") as training_text,
+        training_files_jsonl_path.open("w", encoding="utf-8", newline="\n") as training_files_jsonl,
+    ):
         for source_path in al_files:
             relative_path = source_path.relative_to(source_dir)
             output_path = files_dir / relative_path.with_suffix(".txt")
@@ -116,9 +128,20 @@ def convert(source_dir: Path, output_dir: Path, dry_run: bool = False) -> dict[s
             content = content.strip()
             output_path.write_text(content + "\n", encoding="utf-8", newline="\n")
 
-            training_text.write(f"\n\n<|bc_al_file|>{relative_path.as_posix()}\n")
-            training_text.write(content)
-            training_text.write("\n<|end_bc_al_file|>\n")
+            training_file_text = format_training_file(relative_path, content)
+            training_text.write(f"\n\n{training_file_text}\n")
+            training_files_jsonl.write(
+                json.dumps(
+                    {
+                        "source": relative_path.as_posix(),
+                        "text": training_file_text,
+                        "characters": len(content),
+                        "stripped_microsoft_license_header_count": stripped_header_occurrences,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
 
             manifest_files.append(
                 {

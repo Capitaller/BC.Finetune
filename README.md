@@ -9,7 +9,8 @@ The repository keeps the original Business Central source export out of git and 
 - `Base Application.Source/` - local Business Central Base Application source export. This folder is ignored by git.
 - `scripts/convert_al_to_text.py` - converts `.al` files into text training data.
 - `data/bc_al_text/files/` - mirrored `.txt` files generated from `.al` files.
-- `data/bc_al_text/business_central_al_training_text.txt` - combined AL training text file to upload as a Kaggle Dataset for the notebook.
+- `data/bc_al_text/business_central_al_training_text.txt` - combined AL training text file with file-boundary markers.
+- `data/bc_al_text/business_central_al_files.jsonl` - one JSONL row per AL file, useful for file-aware train/validation splitting and chunking.
 - `nb/Gemma4_E2B_BC_CPT.ipynb` - Gemma 4 E2B continued-pretraining notebook for BC AL code in Kaggle.
 
 ## Generate The Corpus
@@ -26,7 +27,7 @@ To preview the conversion without writing files:
 python3 scripts/convert_al_to_text.py --dry-run
 ```
 
-By default, the script reads from `Base Application.Source/` and writes to `data/bc_al_text/`. It creates one `.txt` file per `.al` file under `data/bc_al_text/files/`, preserving the relative source folders, and also creates `data/bc_al_text/business_central_al_training_text.txt` with file-boundary markers.
+By default, the script reads from `Base Application.Source/` and writes to `data/bc_al_text/`. It creates one `.txt` file per `.al` file under `data/bc_al_text/files/`, preserving the relative source folders. It also creates `data/bc_al_text/business_central_al_training_text.txt` with file-boundary markers and `data/bc_al_text/business_central_al_files.jsonl` with one JSON object per AL file.
 
 ## Kaggle Training Notebook
 
